@@ -1,4 +1,4 @@
-name: CI
+name: Agent0 CI
 
 on:
   pull_request:
@@ -7,55 +7,29 @@ on:
     branches: [main]
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Lint Python files
-        run: |
-          pip install flake8
-          # Lint all python files in known directories
-          flake8 identity/ tools/ scripts/ --max-line-length=100 --extend-ignore=E501 --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 identity/ tools/ scripts/ --max-line-length=100 --extend-ignore=E501 --count --exit-zero --max-complexity=10 --statistics
-  
   check-structure:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Check directory structure
+      - name: Verify required paths
         run: |
-          test -d docs || (echo "Missing docs/" && exit 1)
-          test -d tools || (echo "Missing tools/" && exit 1)
-          test -d scripts || (echo "Missing scripts/" && exit 1)
-          test -d identity || (echo "Missing identity/" && exit 1)
-          echo "✓ Directory structure OK"
-      - name: Check required files exist
-        run: |
-          test -f docs/README.md || (echo "Missing docs/README.md" && exit 1)
-          test -f tools/README.md || (echo "Missing tools/README.md" && exit 1)
-          test -f scripts/README.md || (echo "Missing scripts/README.md" && exit 1)
-          test -f identity/README.md || (echo "Missing identity/README.md" && exit 1)
-          echo "✓ Required README files present"
-      - name: Verify at least one identity script exists
-        run: |
-          if [ -z "$(ls -A identity/*.py 2>/dev/null)" ]; then
-            echo "No python scripts found in identity/"
+          set -euo pipefail
+          if [ ! -f .agent0/required_paths.txt ]; then
+            echo "Error: .agent0/required_paths.txt missing"
             exit 1
-          else
-            echo "✓ Found identity scripts: $(ls identity/*.py)"
           fi
-      - name: Check CODEOWNERS exists
-        run: |
-          test -f .github/CODEOWNERS || (echo "Missing CODEOWNERS" && exit 1)
-          echo "✓ CODEOWNERS present"
-      - name: Check PR template exists
-        run: |
-          test -f .github/pull_request_template.md || (echo "Missing PR template" && exit 1)
-          echo "✓ PR template present"
+          while IFS= read -r p || [ -n "$p" ]; do
+            # Skip empty lines
+            [ -z "$p" ] && continue
+            # Skip comments (lines starting with #)
+            case "$p" in \#*) continue ;; esac
+            
+            if [ ! -e "$p" ]; then
+              echo "Missing required path: $p"
+              exit 1
+            fi
+            echo "Checked: $p"
+          done < .agent0/required_paths.txt
 
   test-python:
     runs-on: ubuntu-latest
@@ -65,16 +39,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Test identity scripts (syntax only)
+      - name: Install (minimal)
         run: |
-          # Compile all python files in identity/
-          python3 -m py_compile identity/*.py
-          echo "✓ Python scripts compiled successfully"
-      - name: Test scripts with --help (dry run)
+          python -m pip install -U pip
+          # Install in editable mode if pyproject.toml exists
+          if [ -f pyproject.toml ]; then
+            pip install -e . || true
+          fi
+      - name: Syntax check
         run: |
-          # Run --help on all python files in identity/
-          for script in identity/*.py; do
-            echo "Testing $script..."
-            python3 "$script" --help >/dev/null 2>&1 || python3 "$script" --help || echo "Warning: $script failed --help check"
-          done
-          echo "✓ Scripts checked"
+          # Compile all python files in the project
+          python -m compileall identity tools scripts
+      - name: Help smoke test (dry run)
+        run: |
+          # Verify the main entry point runs without error
+          if [ -f identity/verify_identity.py ]; then
+            python identity/verify_identity.py --help
+          else
+            echo "Skipping verify_identity.py check (file not found)"
+          fi

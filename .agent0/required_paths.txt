@@ -1,0 +1,14 @@
+# Core structure
+docs/README.md
+tools/README.md
+scripts/README.md
+identity/README.md
+
+# Python
+identity/verify_identity.py
+pyproject.toml
+
+# GitHub
+.github/CODEOWNERS
+.github/pull_request_template.md
+.github/workflows/ci.yml
