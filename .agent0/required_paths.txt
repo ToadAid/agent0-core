@@ -1,0 +1,7 @@
+README.md
+LICENSE
+AGENT_POLICY.md
+SECURITY.md
+pyproject.toml
+docs/TOOLING_STANDARD.md
+identity/verify_identity.py
