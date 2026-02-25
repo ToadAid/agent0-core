@@ -1,0 +1,60 @@
+name: Agent0 CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  check-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify required paths
+        run: |
+          set -euo pipefail
+          if [ ! -f .agent0/required_paths.txt ]; then
+            echo "Error: .agent0/required_paths.txt missing"
+            exit 1
+          fi
+          while IFS= read -r p || [ -n "$p" ]; do
+            # Skip empty lines
+            [ -z "$p" ] && continue
+            # Skip comments (lines starting with #)
+            case "$p" in \#*) continue ;; esac
+            
+            if [ ! -e "$p" ]; then
+              echo "Missing required path: $p"
+              exit 1
+            fi
+            echo "Checked: $p"
+          done < .agent0/required_paths.txt
+
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install (minimal)
+        run: |
+          python -m pip install -U pip
+          # Install in editable mode if pyproject.toml exists
+          if [ -f pyproject.toml ]; then
+            pip install -e . || true
+          fi
+      - name: Syntax check
+        run: |
+          # Compile all python files in the project
+          python -m compileall identity tools scripts
+      - name: Help smoke test (dry run)
+        run: |
+          # Verify the main entry point runs without error
+          if [ -f identity/verify_identity.py ]; then
+            python identity/verify_identity.py --help
+          else
+            echo "Skipping verify_identity.py check (file not found)"
+          fi
