@@ -41,7 +41,6 @@ jobs:
       - name: Verify Python scripts are executable
         run: |
           test -f identity/verify_identity.py || (echo "Missing verify_identity.py" && exit 1)
-          test -f identity/forge_check.py || (echo "Missing forge_check.py" && exit 1)
           echo "✓ Identity toolkit scripts present"
       - name: Check CODEOWNERS exists
         run: |
@@ -63,10 +62,8 @@ jobs:
       - name: Test identity scripts (syntax only)
         run: |
           python3 -m py_compile identity/verify_identity.py
-          python3 -m py_compile identity/forge_check.py
           echo "✓ Python scripts compile successfully"
       - name: Test scripts with --help (dry run)
         run: |
           python3 identity/verify_identity.py --help 2>/dev/null || python3 identity/verify_identity.py 2>&1 | head -20
-          python3 identity/forge_check.py --help 2>/dev/null || python3 identity/forge_check.py 2>&1 | head -20
           echo "✓ Scripts execute without errors"
