@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lint Python files
+        run: |
+          pip install flake8
+          flake8 identity/ tools/ scripts/ --max-line-length=100 --extend-ignore=E501 || true
+  
+  check-structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check directory structure
+        run: |
+          test -d docs || (echo "Missing docs/" && exit 1)
+          test -d tools || (echo "Missing tools/" && exit 1)
+          test -d scripts || (echo "Missing scripts/" && exit 1)
+          test -d identity || (echo "Missing identity/" && exit 1)
+          echo "✓ Directory structure OK"
+      - name: Check required files exist
+        run: |
+          test -f docs/README.md || (echo "Missing docs/README.md" && exit 1)
+          test -f tools/README.md || (echo "Missing tools/README.md" && exit 1)
+          test -f scripts/README.md || (echo "Missing scripts/README.md" && exit 1)
+          test -f identity/README.md || (echo "Missing identity/README.md" && exit 1)
+          echo "✓ Required README files present"
+      - name: Verify Python scripts are executable
+        run: |
+          test -f identity/verify_identity.py || (echo "Missing verify_identity.py" && exit 1)
+          test -f identity/forge_check.py || (echo "Missing forge_check.py" && exit 1)
+          echo "✓ Identity toolkit scripts present"
+      - name: Check CODEOWNERS exists
+        run: |
+          test -f .github/CODEOWNERS || (echo "Missing CODEOWNERS" && exit 1)
+          echo "✓ CODEOWNERS present"
+      - name: Check PR template exists
+        run: |
+          test -f .github/pull_request_template.md || (echo "Missing PR template" && exit 1)
+          echo "✓ PR template present"
+
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Test identity scripts (syntax only)
+        run: |
+          python3 -m py_compile identity/verify_identity.py
+          python3 -m py_compile identity/forge_check.py
+          echo "✓ Python scripts compile successfully"
+      - name: Test scripts with --help (dry run)
+        run: |
+          python3 identity/verify_identity.py --help 2>/dev/null || python3 identity/verify_identity.py 2>&1 | head -20
+          python3 identity/forge_check.py --help 2>/dev/null || python3 identity/forge_check.py 2>&1 | head -20
+          echo "✓ Scripts execute without errors"

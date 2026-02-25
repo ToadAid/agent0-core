@@ -1,0 +1,21 @@
+# ToadAid Agent0 Core - CODEOWNERS
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Global fallback - require review from repo owner
+* @ToadAid
+
+# Documentation changes
+docs/ @ToadAid
+
+# Scripts - infrastructure and automation
+scripts/ @ToadAid
+
+# Tools - agent utilities
+tools/ @ToadAid
+
+# Policy and security files
+AGENT_POLICY.md @ToadAid
+SECURITY.md @ToadAid
+
+# Core configuration
+.github/ @ToadAid
