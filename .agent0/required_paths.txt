@@ -6,6 +6,7 @@ identity/README.md
 
 # Python
 identity/verify_identity.py
+identity/forge_check.py
 pyproject.toml
 
 # GitHub
