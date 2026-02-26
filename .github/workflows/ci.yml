@@ -35,10 +35,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+
+      - name: Install Foundry (cast)
+        run: |
+          curl -L https://foundry.paradigm.xyz | bash
+          ~/.foundry/bin/foundryup
+          echo "$HOME/.foundry/bin" >> $GITHUB_PATH
+
       - name: Install (minimal)
         run: |
           python -m pip install -U pip
@@ -46,10 +54,12 @@ jobs:
           if [ -f pyproject.toml ]; then
             pip install -e . || true
           fi
+
       - name: Syntax check
         run: |
           # Compile all python files in the project
           python -m compileall identity tools scripts
+
       - name: Help smoke test (dry run)
         run: |
           # Verify the main entry point runs without error
